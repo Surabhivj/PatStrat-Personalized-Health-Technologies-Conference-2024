@@ -40,7 +40,7 @@ class DataFusion:
             
             # Compute modality network
             mod_net = np.corrcoef(mod_embedding)
-            G = nx.from_numpy_matrix(mod_net)
+            G = nx.from_numpy_array(mod_net)
             mapping = {i: label for i, label in enumerate(mod.columns)}
             G = nx.relabel_nodes(G, mapping)
             pr = nx.pagerank(G, alpha=0.85)
