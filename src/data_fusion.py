@@ -19,6 +19,7 @@ class DataFusion:
 
     def data_fusion(self):
         for mod in self.modalities:
+            print(mod.shape)
             # Handle missing values
             if mod.isna().sum().sum() > 0:
                 imputer = IterativeImputer()

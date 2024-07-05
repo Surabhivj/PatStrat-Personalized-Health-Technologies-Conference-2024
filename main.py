@@ -19,7 +19,6 @@ modalities = [rna_cell_lines, prot, rna_mutation,protein_mutation,cdna_mutation,
 modalities_sortedindex = []
 for df in modalities:
     df.sort_index(inplace=True)
-    
     modalities_sortedindex.append(df)
 
 
@@ -30,4 +29,5 @@ k = 20
 df_instance = DataFusion(modalities, top_mod, k)
 [fused_net, node_feature_df,top_nodes_in_mod_net] = df_instance.data_fusion()
 
-fused_net.to_csv("")
+fused_net.to_csv("data/integrated_network.csv")
+node_feature_df.to_csv("data/patient_features.csv")
