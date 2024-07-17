@@ -8,7 +8,7 @@ from sklearn.metrics import pairwise_distances
 from src.snf import snf
 
 class DataFusion:
-    def __init__(self, modalities, n_mod = 50, n_neighbours=20, n_steps = 5):
+    def __init__(self, modalities, n_mod, n_neighbours, n_steps):
         self.modalities = modalities
         self.top_mod = n_mod
         self.k = n_neighbours

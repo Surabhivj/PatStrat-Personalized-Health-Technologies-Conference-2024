@@ -7,26 +7,22 @@ import pandas as pd
 import networkx as nx
 from src.data_fusion import DataFusion
 
-rna_cell_lines = pd.read_csv("data/RNA_df.csv",index_col=0)
-prot= pd.read_csv("data/PROTEIN_df.csv",index_col=0)
-rna_mutation= pd.read_csv("data/RNA_MUT_df.csv",index_col=0)
-protein_mutation= pd.read_csv("data/PROTEIN_MUT_df.csv",index_col=0)
-cdna_mutation= pd.read_csv("data/CDNA_MUT_df.csv",index_col=0)
-vaf= pd.read_csv("data/GENE_VAF_df.csv",index_col=0)
+rna_cell_lines = pd.read_parquet("data/RNA_df.parquet")
+prot= pd.read_parquet("data/PROTEIN_df.parquet")
+rna_mutation= pd.read_parquet("data/RNA_MUT_df.parquet")
+protein_mutation= pd.read_parquet("data/PROTEIN_MUT_df.parquet")
+cdna_mutation= pd.read_parquet("data/CDNA_MUT_df.parquet")
+vaf= pd.read_parquet("data/GENE_VAF_df.parquet")
 
 # Example data
-modalities = [rna_cell_lines, prot, rna_mutation,protein_mutation,cdna_mutation,vaf]  # List of DataFrame objects
+modalities = [rna_mutation, protein_mutation]  # List of DataFrame objects
 modalities_sortedindex = []
-for df in modalities:
-    df.sort_index(inplace=True)
-    modalities_sortedindex.append(df)
-
-
-top_mod = 10
-k = 20
+n_mod = 100
+n_neighbours = 10
+n_steps = 3
     
 # Initialize and use DataFusion class
-df_instance = DataFusion(modalities, top_mod, k)
+df_instance = DataFusion(modalities, n_mod, n_neighbours, n_steps)
 [fused_net, node_feature_df,top_nodes_in_mod_net] = df_instance.data_fusion()
 
 fused_net.to_csv("data/integrated_network.csv")
