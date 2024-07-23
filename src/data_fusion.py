@@ -6,6 +6,7 @@ from sklearn.decomposition import TruncatedSVD
 from sklearn.utils.extmath import randomized_svd
 from sklearn.metrics import pairwise_distances
 from src.snf import snf
+from sklearn.feature_selection import VarianceThreshold
 
 class DataFusion:
     def __init__(self, modalities, n_mod, n_neighbours, n_steps):
@@ -29,6 +30,8 @@ class DataFusion:
             
             # Perform SVD
             U, S, VT = np.linalg.svd(filled_data, full_matrices=False)
+
+            sklearn.feature_selection.VarianceThreshold(threshold=0.0)
             
             # Compute embeddings
             patient_emb = U * S

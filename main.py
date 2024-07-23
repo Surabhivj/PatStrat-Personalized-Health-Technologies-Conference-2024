@@ -25,5 +25,5 @@ n_steps = 3
 df_instance = DataFusion(modalities, n_mod, n_neighbours, n_steps)
 [fused_net, node_feature_df,top_nodes_in_mod_net] = df_instance.data_fusion()
 
-fused_net.to_csv("data/integrated_network.csv")
-node_feature_df.to_csv("data/patient_features.csv")
+fused_net.to_csv("results/integrated_network.csv")
+node_feature_df.to_csv("results/patient_features.csv")
