@@ -13,6 +13,7 @@ rna_mutation= pd.read_parquet("data/RNA_MUT_df.parquet")
 protein_mutation= pd.read_parquet("data/PROTEIN_MUT_df.parquet")
 cdna_mutation= pd.read_parquet("data/CDNA_MUT_df.parquet")
 vaf= pd.read_parquet("data/GENE_VAF_df.parquet")
+gene = 
 
 # Example data
 modalities = [rna_mutation, protein_mutation]  # List of DataFrame objects
