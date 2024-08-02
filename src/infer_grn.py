@@ -2,16 +2,12 @@
 from inferelator import inferelator_workflow, inferelator_verbose_level, MPControl, CrossValidationManager
 import os
 import fnmatch
+from multiprocessing import Pool, cpu_count
 
 
 # Set verbosity level to "Talky"
 inferelator_verbose_level(1)
 
-
-import os
-import fnmatch
-from multiprocessing import Pool, cpu_count
-from inferelator import inferelator_workflow, CrossValidationManager, MPControl
 
 def set_up_workflow(wkf, DATA_DIR, OUTPUT_DIR, TF_LIST_FILE_NAME, PRIORS_FILE_NAME, GOLD_STANDARD_FILE_NAME, EXPRESSION_FILE_NAME):
     wkf.set_file_paths(input_dir=DATA_DIR,
@@ -27,14 +23,14 @@ def set_up_workflow(wkf, DATA_DIR, OUTPUT_DIR, TF_LIST_FILE_NAME, PRIORS_FILE_NA
 
 def process_file(EXPRESSION_FILE_NAME, DATA_DIR, PRIORS_FILE_NAME, GOLD_STANDARD_FILE_NAME, TF_LIST_FILE_NAME, n_cores):
     outfile = EXPRESSION_FILE_NAME.split('.')[0]
-    OUTPUT_DIR = os.path.join('/home/surabhi/Documents/PatStrat-Personalized-Health-Technologies-Conference-2024/results/GRNs', outfile)
+    OUTPUT_DIR = os.path.join('/home/surabhi/Documents/PatStrat-Personalized-Health-Technologies-Conference-2024/results/transcriptomics', outfile)
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
     MPControl.set_multiprocess_engine("multiprocessing")
     MPControl.client.processes = n_cores
     MPControl.connect()
 
-    CV_SEEDS = list(range(42, 52))
+    CV_SEEDS = list(range(10, 15))
 
     worker = inferelator_workflow(regression="bbsr", workflow="tfa")
     worker = set_up_workflow(worker, DATA_DIR, OUTPUT_DIR, TF_LIST_FILE_NAME, PRIORS_FILE_NAME, GOLD_STANDARD_FILE_NAME, EXPRESSION_FILE_NAME)

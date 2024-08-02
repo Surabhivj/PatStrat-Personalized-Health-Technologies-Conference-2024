@@ -8,7 +8,6 @@ import networkx as nx
 from src.data_fusion import DataFusion
 from src.infer_grn import InferGRN
 from src.infer_ppi import Infer_PPI
-from src.infer_mutation_net import Infer_MUT
 import argparse
 
 # Set the location of the input data and the desired location of the output files
@@ -23,15 +22,10 @@ TF_LIST_FILE_NAME = 'tf_names.tsv'
 drug_response_file = "data/drug_response.csv"
 prot_expression_file = "data/protein_abundance.csv"
 
-mutation_file = "data/mutations_all_20230202.csv"
-
-InferGRN(DATA_DIR,PRIORS_FILE_NAME,GOLD_STANDARD_FILE_NAME,TF_LIST_FILE_NAME)
+#InferGRN(DATA_DIR,PRIORS_FILE_NAME,GOLD_STANDARD_FILE_NAME,TF_LIST_FILE_NAME)
 
 
-#Infer_PPI(prot_expression_file,drug_response_file)
-
-
-#Infer_MUT(mutation_file, drug_response_file)
+Infer_PPI(prot_expression_file,drug_response_file)
 
 
 
