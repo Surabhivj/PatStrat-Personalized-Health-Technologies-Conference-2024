@@ -30,15 +30,15 @@ def process_file(EXPRESSION_FILE_NAME, DATA_DIR, PRIORS_FILE_NAME, GOLD_STANDARD
     MPControl.client.processes = n_cores
     MPControl.connect()
 
-    CV_SEEDS = list(range(10, 15))
+    # CV_SEEDS = list(range(10, 15))
 
-    worker = inferelator_workflow(regression="bbsr", workflow="tfa")
-    worker = set_up_workflow(worker, DATA_DIR, OUTPUT_DIR, TF_LIST_FILE_NAME, PRIORS_FILE_NAME, GOLD_STANDARD_FILE_NAME, EXPRESSION_FILE_NAME)
-    worker.append_to_path("output_dir", "bbsr")
+    # worker = inferelator_workflow(regression="bbsr", workflow="tfa")
+    # worker = set_up_workflow(worker, DATA_DIR, OUTPUT_DIR, TF_LIST_FILE_NAME, PRIORS_FILE_NAME, GOLD_STANDARD_FILE_NAME, EXPRESSION_FILE_NAME)
+    # worker.append_to_path("output_dir", "bbsr")
 
-    cv_wrap = CrossValidationManager(worker)
-    cv_wrap.add_gridsearch_parameter('random_seed', CV_SEEDS)
-    cv_wrap.run()
+    # cv_wrap = CrossValidationManager(worker)
+    # cv_wrap.add_gridsearch_parameter('random_seed', CV_SEEDS)
+    # cv_wrap.run()
 
     worker = inferelator_workflow(regression="bbsr", workflow="tfa")
     worker = set_up_workflow(worker, DATA_DIR, OUTPUT_DIR, TF_LIST_FILE_NAME, PRIORS_FILE_NAME, GOLD_STANDARD_FILE_NAME, EXPRESSION_FILE_NAME)
