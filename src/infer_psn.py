@@ -1,53 +1,84 @@
 from sklearn.preprocessing import LabelEncoder
-from sklearn.decomposition import PCA
-import matplotlib.pyplot as plt
-import seaborn as sns
 import numpy as np
 import pandas as pd
 import networkx as nx
 import os
-from sklearn.metrics import normalized_mutual_info_score
 from scipy.stats import zscore
-from sklearn.preprocessing import LabelEncoder
 #import packages
 import wget
 from datetime import date
 import gzip
 from sklearn.preprocessing import MinMaxScaler
 from src.snf import snf
+from itertools import combinations
+from collections import defaultdict
 
 import warnings
 warnings.filterwarnings("ignore")
 
 
-# Function to compute mutual information between two columns
-def mutual_information(x, y):
-    return normalized_mutual_info_score(x, y)
+def sort_row(row):
+    return pd.Series(sorted(row))
 
-# Compute mutual information for each pair of proteins
-def compute_mutual_information(df):
-    # Initialize a DataFrame to store mutual information scores
-    mutual_info_df = pd.DataFrame(index=df.columns, columns=df.columns)
-
-    # Compute mutual information for each pair of columns
-    for col1 in df.columns:
-        for col2 in df.columns:
-            mutual_info_df.loc[col1, col2] = mutual_information(df[col1], df[col2])
+def compute_mutual_information(df_):
+    # Normalize the data
+    scaler = MinMaxScaler()
+    df = pd.DataFrame(scaler.fit_transform(df_), columns=df_.columns)
     
-    # Create a list to store pairs with mutual information > 0.7
+    # Compute the correlation matrix
+    mutual_info_df = df.corr(method='spearman')
+    
+    # Get the upper triangular indices
+    upper_tri_indices = np.triu_indices(mutual_info_df.shape[0], k=1)
+    
+    # Extract the pairs and values
     pairs = []
-    for col1 in mutual_info_df.columns:
-        for col2 in mutual_info_df.columns:
-            if col1 != col2:
-                mi_score = mutual_info_df.loc[col1, col2]
-                if mi_score > 0.7:
-                    pairs.append((col1, col2, mi_score))
+    values = []
+    for i, j in zip(upper_tri_indices[0], upper_tri_indices[1]):
+        pairs.append((df.columns[i], df.columns[j]))
+        values.append(mutual_info_df.iloc[i, j])
 
-    # Create a DataFrame for the pairwise scores
-    pairwise_df = pd.DataFrame(pairs, columns=['protein1', 'protein2', 'Mutual Information'])
-    pairwise_df = pairwise_df[['protein1', 'protein2']]
+    # Create a DataFrame with pairs and their values
+    pairs_df = pd.DataFrame({
+        'source': [p[0] for p in pairs],
+        'target': [p[1] for p in pairs],
+        'score': values
+    })
+    pairs_df = pairs_df[pairs_df['score'] > 0.7]
+    return pairs_df
+
+
+def replace_and_generate_matrix(gnet, string_to_number):
+    """
+    Replaces protein names in the DataFrame with numbers and generates a matrix representing the network.
     
-    return pairwise_df
+    Parameters:
+    - gnet (pd.DataFrame): DataFrame containing protein interactions with names in the first two columns.
+    - string_to_number (dict): Dictionary mapping protein names to numerical IDs.
+
+    Returns:
+    - pd.DataFrame: Symmetric matrix where rows and columns represent proteins, and values represent interactions.
+    """
+    
+    # Step 1: Replace protein names with numbers
+    gnet.iloc[:, 0] = gnet.iloc[:, 0].map(string_to_number)
+    gnet.iloc[:, 1] = gnet.iloc[:, 1].map(string_to_number)
+    
+    # Step 2: Get the list of unique numerical IDs from the dictionary
+    unique_proteins = list(string_to_number.values())
+    
+    # Step 3: Initialize the matrix with zeros
+    matrix = pd.DataFrame(0, index=unique_proteins, columns=unique_proteins)
+    
+    # Step 4: Fill the matrix
+    for _, row in gnet.iterrows():
+        source, target = row.iloc[0], row.iloc[1]
+        if source in matrix.index and target in matrix.columns:
+            matrix.loc[source, target] = 1  # Set a value of 1 for the presence of an interaction
+            matrix.loc[target, source] = 1  # Ensure the matrix is symmetric for undirected interactions
+    
+    return matrix
+
 
 # Function to generate unique sorted pairs, excluding pairs with the same ID
 def generate_unique_pairs(data):
@@ -62,10 +93,12 @@ def generate_unique_pairs(data):
                     yield sorted_pair    
 
 
+
 def Infer_PSN(mutation_file,prot_expression_file,gene_expression_file,drug_response_file, n_neighbors = 20):
     prot_expression = pd.read_csv(prot_expression_file, index_col=0)
     gene_expression = pd.read_csv(gene_expression_file, index_col=0)
     mut = pd.read_csv(mutation_file)
+    mut = mut[mut['cancer_driver']==True]
     
     drug_response = pd.read_csv(drug_response_file, index_col=0)
     drug_response = drug_response[drug_response['TCGA_DESC'] != 'UNCLASSIFIED']
@@ -79,7 +112,7 @@ def Infer_PSN(mutation_file,prot_expression_file,gene_expression_file,drug_respo
 
     prot_expression = prot_expression[prot_expression.index.isin(models)]
     gene_expression = gene_expression[gene_expression.index.isin(models)]
-    mut = mut[mut['model_id'].isin(models)].reset_index(drop=True)
+    mut = mut[mut['model_id'].isin(models)].reset_index(drop=False)
     mut.index = mut['model_id'].values
     data = mut[['gene_symbol']]
     data.sort_values('gene_symbol')
@@ -90,21 +123,50 @@ def Infer_PSN(mutation_file,prot_expression_file,gene_expression_file,drug_respo
     print("Computing Pnet...")
 
     pnet = compute_mutual_information(prot_expression)
-    pnet.to_csv(os.path.join("result", "proteomics", "PSN_prot_net.tsv.gz"), sep='\t', index=True)
+    pnet['type'] = 'proteomics'
+    pnet.to_csv(os.path.join("results", "PSN_prot_net.csv"), index=False)
 
     print("Computing Gnet...")
     gnet = compute_mutual_information(gene_expression)
-    gnet.to_csv(os.path.join("result", "transcriptomics", "PSN_rna_net.tsv.gz"), sep='\t', index=True)
+    gnet['type'] = 'transcriptomics'
+    gnet.to_csv(os.path.join("results", "PSN_rna_net.csv"), index=False)
 
     print("Computing Mnet...")
 
     unique_pairs = list(generate_unique_pairs(data))
-    mnet = pd.DataFrame(unique_pairs, columns=['patient1', 'patient2'])
-    mnet.to_csv(os.path.join("result", "genomics", "PSN_mut_net.tsv.gz"), sep='\t', index=True)
+    mnet = pd.DataFrame(unique_pairs, columns=['source', 'target'])
+    mnet = mnet[['source', 'source']].apply(sort_row, axis=1)
+    mnet.drop_duplicates(inplace=True)
+    mnet.columns = ['source', 'target']
+    mnet['score'] = 1
+    mnet['type'] = 'genomics'
+    mnet.to_csv(os.path.join("results", "PSN_mut_net.csv"), index=False)
 
     print("Computing integrated PSN...")
+
+    string_to_number = {s: i for i, s in enumerate(set(drug_response.index))}
+    gnet = replace_and_generate_matrix(gnet, string_to_number)
+    pnet = replace_and_generate_matrix(pnet, string_to_number)
+    mnet = replace_and_generate_matrix(mnet, string_to_number)
     
     fused_net = snf([gnet, pnet, mnet], K=n_neighbors)
-    fused_net.to_csv("results/integrated_PSN.csv")
+    number_to_string = {float(i): s for s, i in string_to_number.items()}
 
+    # Get the non-zero indices of `fused_net`
+    nonzero_indices = np.nonzero(fused_net)
+
+    # Create a DataFrame from the non-zero values
+    net = pd.DataFrame(
+        np.vstack((nonzero_indices[0], nonzero_indices[1], fused_net[nonzero_indices])).T,
+        columns=['source', 'target', 'score']
+    )
+    net['source'].replace(number_to_string, inplace=True)
+    net['target'].replace(number_to_string, inplace=True)
+    net['type'] = 'integrated'
+    net.to_csv("results/integrated_PSN.csv", index=False)
+
+    drug_response['patient'] = drug_response.index.values
+    node_info = drug_response[['patient','TCGA_DESC']].drop_duplicates()
+    node_info.reset_index(inplace=True, drop=True)
+    node_info.to_csv("results/integrated_PSN_nodes.csv", index=False)
 

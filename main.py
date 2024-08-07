@@ -16,6 +16,8 @@ drug_response_file = "data/drug_response.csv"
 prot_expression_file = "data/protein_abundance.csv"
 mutation_file = "data/mutations_all_20230202.csv"
 gene_expression_file = "data/gene_expression.csv"
+gene_ids_file = "data/gene_identifiers_20191101.csv"
+
 
 # Define a function to run the InferGRN
 def run_infer_grn():
@@ -23,7 +25,7 @@ def run_infer_grn():
 
 # Define a function to run the Infer_PPI
 def run_infer_ppi():
-    Infer_PPI(prot_expression_file, drug_response_file)
+    Infer_PPI(prot_expression_file, drug_response_file, gene_ids_file)
 
 # Define a function to run the Infer_MUT
 def run_infer_mut():

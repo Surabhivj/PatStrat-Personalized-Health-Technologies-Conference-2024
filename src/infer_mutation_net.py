@@ -25,6 +25,7 @@ def Infer_MUT(mutation_file, drug_response_file):
     mut = pd.read_csv(mutation_file)
     mut = mut[mut['model_id'].isin(models)].reset_index(drop=True)
     mut.index = mut['model_id'].values
+    mut = mut[mut['cancer_driver']==True]
 
     prot_mut = mut[['gene_symbol', 'protein_mutation']]
     rna_mut = mut[['gene_symbol', 'rna_mutation']]
