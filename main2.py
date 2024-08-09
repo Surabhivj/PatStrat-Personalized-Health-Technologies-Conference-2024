@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import networkx as nx
 from src.data_fusion import DataFusion
-from src.infer_grn import InferGRN
+from infer_grn_multiprocessing import InferGRN
 from src.infer_ppi import Infer_PPI
 import argparse
 

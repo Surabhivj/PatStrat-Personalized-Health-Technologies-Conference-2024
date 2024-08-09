@@ -1,7 +1,8 @@
+# Load modules
 from inferelator import inferelator_workflow, inferelator_verbose_level, MPControl, CrossValidationManager
 import os
 import fnmatch
-# from multiprocessing import cpu_count  # No longer needed
+from multiprocessing import Pool, cpu_count
 
 
 # Set verbosity level to "Talky"
@@ -20,19 +21,30 @@ def set_up_workflow(wkf, DATA_DIR, OUTPUT_DIR, TF_LIST_FILE_NAME, PRIORS_FILE_NA
     wkf.set_crossvalidation_parameters(split_gold_standard_for_crossvalidation=True, cv_split_ratio=0.2)
     return wkf
 
-def process_file(EXPRESSION_FILE_NAME, DATA_DIR, PRIORS_FILE_NAME, GOLD_STANDARD_FILE_NAME, TF_LIST_FILE_NAME):
+def process_file(EXPRESSION_FILE_NAME, DATA_DIR, PRIORS_FILE_NAME, GOLD_STANDARD_FILE_NAME, TF_LIST_FILE_NAME, n_cores):
     outfile = EXPRESSION_FILE_NAME.split('.')[0]
     OUTPUT_DIR = os.path.join('/home/surabhi/Documents/PatStrat-Personalized-Health-Technologies-Conference-2024/results/transcriptomics', outfile)
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-    #MPControl.set_multiprocess_engine("sequential")  
-    #MPControl.connect()
+    MPControl.set_multiprocess_engine("multiprocessing")
+    MPControl.client.processes = n_cores
+    MPControl.connect()
+
+    # CV_SEEDS = list(range(10, 15))
+
+    # worker = inferelator_workflow(regression="bbsr", workflow="tfa")
+    # worker = set_up_workflow(worker, DATA_DIR, OUTPUT_DIR, TF_LIST_FILE_NAME, PRIORS_FILE_NAME, GOLD_STANDARD_FILE_NAME, EXPRESSION_FILE_NAME)
+    # worker.append_to_path("output_dir", "bbsr")
+
+    # cv_wrap = CrossValidationManager(worker)
+    # cv_wrap.add_gridsearch_parameter('random_seed', CV_SEEDS)
+    # cv_wrap.run()
 
     worker = inferelator_workflow(regression="bbsr", workflow="tfa")
     worker = set_up_workflow(worker, DATA_DIR, OUTPUT_DIR, TF_LIST_FILE_NAME, PRIORS_FILE_NAME, GOLD_STANDARD_FILE_NAME, EXPRESSION_FILE_NAME)
     worker.append_to_path('output_dir', 'final')
     worker.set_crossvalidation_parameters(split_gold_standard_for_crossvalidation=False, cv_split_ratio=None)
-    worker.set_run_parameters(num_bootstraps=10, random_seed=100)
+    worker.set_run_parameters(num_bootstraps=1, random_seed=100)
 
     final_network_results = worker.run()
     return final_network_results
@@ -41,13 +53,23 @@ def InferGRN(DATA_DIR, PRIORS_FILE_NAME, GOLD_STANDARD_FILE_NAME, TF_LIST_FILE_N
     pattern = "*_gene_expression.tsv.gz"
     all_files = os.listdir(DATA_DIR)
     matched_files = fnmatch.filter(all_files, pattern)
+    n_cores = cpu_count()
 
     if not matched_files:
-        return []  # Handle the empty case if needed
+        return []  # or handle the empty case as needed
     
-    results = []
-    for f in matched_files:
-        result = process_file(f, DATA_DIR, PRIORS_FILE_NAME, GOLD_STANDARD_FILE_NAME, TF_LIST_FILE_NAME)
-        results.append(result)
+    # Calculate how many cores to use per file
+    cores_per_file = n_cores // len(matched_files)
     
+    # Create a pool of workers
+    with Pool(processes=n_cores) as pool:
+        # Prepare the arguments for each file
+        args = [(f, DATA_DIR, PRIORS_FILE_NAME, GOLD_STANDARD_FILE_NAME, TF_LIST_FILE_NAME, cores_per_file) for f in matched_files]
+        
+        # Process files in parallel
+        results = pool.starmap(process_file, args)
     return results
+    
+    # with Pool(processes=n_cores) as pool:
+    #     results = pool.starmap(process_file, [(f, DATA_DIR, PRIORS_FILE_NAME, GOLD_STANDARD_FILE_NAME, TF_LIST_FILE_NAME, n_cores // len(matched_files)) for f in matched_files])
+    # return results
