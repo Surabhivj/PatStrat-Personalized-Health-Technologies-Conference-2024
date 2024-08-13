@@ -3,6 +3,7 @@ from src.infer_grn import InferGRN
 from src.infer_ppi import Infer_PPI
 from src.infer_mutation_net import Infer_MUT
 from src.infer_psn import Infer_PSN
+from src.embedd_disease import EMBEDD_DISEASE
 
 # Set the location of the input data and the desired location of the output files
 DATA_DIR = 'data/transcriptomics'
@@ -35,12 +36,15 @@ def run_infer_mut():
 def run_infer_psn():
     Infer_PSN(mutation_file, prot_expression_file, gene_expression_file, drug_response_file, n_neighbors=20)
 
+def run_embedd_disease():
+    EMBEDD_DISEASE()
+
 # Set up argument parsing
 def main():
     parser = argparse.ArgumentParser(description="Run inference methods")
     parser.add_argument(
         '--method', 
-        choices=['grn', 'ppi', 'mut', 'psn'], 
+        choices=['grn', 'ppi', 'mut', 'psn', 'de'], 
         required=True, 
         help="Inference method to run: 'grn', 'ppi', 'mut', 'psn'"
     )
@@ -55,6 +59,8 @@ def main():
         run_infer_mut()
     elif args.method == 'psn':
         run_infer_psn()
+    elif args.method == 'de':
+        run_embedd_disease()
 
 if __name__ == "__main__":
     main()
