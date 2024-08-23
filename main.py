@@ -4,6 +4,8 @@ from src.infer_ppi import Infer_PPI
 from src.infer_mutation_net import Infer_MUT
 from src.infer_psn import Infer_PSN
 from src.embedd_disease import EMBEDD_DISEASE
+from src.embedd_patients import EMBEDD_PATIENTS
+from src.predict_drug_response import PREDICT_RESPONSE
 
 # Set the location of the input data and the desired location of the output files
 DATA_DIR = 'data/transcriptomics'
@@ -19,14 +21,22 @@ mutation_file = "data/mutations_all_20230202.csv"
 gene_expression_file = "data/gene_expression.csv"
 gene_ids_file = "data/gene_identifiers_20191101.csv"
 
+disease_embedd_Path = "results/disease_embeddings.csv"
+PSNpath = "results/integrated_PSN.csv"
+
 
 # Define a function to run the InferGRN
 def run_infer_grn():
     InferGRN(DATA_DIR, PRIORS_FILE_NAME, GOLD_STANDARD_FILE_NAME, TF_LIST_FILE_NAME)
 
+# Define a function to run the InferGRN
+def run_drug_response_pred():
+    PREDICT_RESPONSE()
+
 # Define a function to run the Infer_PPI
 def run_infer_ppi():
     Infer_PPI(prot_expression_file, drug_response_file, gene_ids_file)
+
 
 # Define a function to run the Infer_MUT
 def run_infer_mut():
@@ -39,14 +49,17 @@ def run_infer_psn():
 def run_embedd_disease():
     EMBEDD_DISEASE()
 
+def run_embedd_patients():
+    EMBEDD_PATIENTS(disease_embedd_Path, PSNpath)
+
 # Set up argument parsing
 def main():
     parser = argparse.ArgumentParser(description="Run inference methods")
     parser.add_argument(
         '--method', 
-        choices=['grn', 'ppi', 'mut', 'psn', 'de'], 
+        choices=['grn', 'ppi', 'mut', 'psn', 'de', 'emb', 'pred'], 
         required=True, 
-        help="Inference method to run: 'grn', 'ppi', 'mut', 'psn'"
+        help="Inference method to run: 'grn', 'ppi', 'mut', 'psn', 'emb"
     )
     
     args = parser.parse_args()
@@ -61,6 +74,10 @@ def main():
         run_infer_psn()
     elif args.method == 'de':
         run_embedd_disease()
+    elif args.method == 'emb':
+        run_embedd_patients()
+    elif args.method == 'pred':
+        run_drug_response_pred()
 
 if __name__ == "__main__":
     main()

@@ -154,7 +154,6 @@ def Infer_PSN(mutation_file,prot_expression_file,gene_expression_file,drug_respo
     gnet.to_csv(os.path.join("results", "PSN_rna_net.csv"), index=False)
 
     print("Computing Mnet...")
-
     # Generate unique pairs and their counts
     pairs_counts = generate_unique_pairs(data)
 
@@ -164,14 +163,12 @@ def Infer_PSN(mutation_file,prot_expression_file,gene_expression_file,drug_respo
     #mnet = mnet.drop_duplicates(subset=['source', 'target'])
     mnet['type'] = 'genomics'
     mnet.to_csv(os.path.join("results", "PSN_mut_net.csv"), index=False)
-
     print("Computing integrated PSN...")
 
     string_to_number = {s: i for i, s in enumerate(set(drug_response.index))}
     gnet = replace_and_generate_matrix(gnet, string_to_number)
     pnet = replace_and_generate_matrix(pnet, string_to_number)
     mnet = replace_and_generate_matrix(mnet, string_to_number)
-    
     fused_net = snf([gnet, pnet, mnet], K=n_neighbors)
     number_to_string = {float(i): s for s, i in string_to_number.items()}
 
@@ -186,7 +183,6 @@ def Infer_PSN(mutation_file,prot_expression_file,gene_expression_file,drug_respo
     net['source'].replace(number_to_string, inplace=True)
     net['target'].replace(number_to_string, inplace=True)
     net['type'] = 'integrated'
-
     net = net[net['source'] != net['target']]
     scaler = MinMaxScaler()
     net[['score']] = scaler.fit_transform(net[['score']])  
@@ -194,7 +190,6 @@ def Infer_PSN(mutation_file,prot_expression_file,gene_expression_file,drug_respo
     
     # Create a list of all unique samples
     samples = net['source'].tolist() + net['target'].tolist()
-
     drug_response['patient'] = drug_response.index.values
     node_info = drug_response[['patient','TCGA_DESC']].drop_duplicates()
     node_info.reset_index(inplace=True, drop=True)

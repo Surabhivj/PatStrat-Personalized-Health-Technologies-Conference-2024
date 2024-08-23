@@ -9,7 +9,6 @@ from karateclub import Graph2Vec
 def EMBEDD_DISEASE():
 
     idx = 0
-
     mutDIR = "results/genomics"
     protDIR = "results/proteomics"
     geneDIR = "results/transcriptomics"
@@ -21,6 +20,10 @@ def EMBEDD_DISEASE():
     graphs = []
     graph_names = []
 
+    genomics_graphs = []
+    proteomics_graphs = []
+    mutation_graphs = []
+    
     for idx in range(len(mutFILES)):
         mnet = pd.read_csv(os.path.join(mutDIR, mutFILES[idx]), sep = "\t")
         pnet = pd.read_csv(os.path.join(protDIR,proFILES[idx]), sep = "\t", index_col=0)
@@ -53,6 +56,37 @@ def EMBEDD_DISEASE():
         graphs.append(G)
         graph_names.append(mutFILES[idx].split('_')[0] )
 
+        genomics_graph = nx.DiGraph()
+        for index, row in gnet.iterrows():
+            genomics_graph.add_edge(row['source'], row['target'])
+        genomics_graphs.append(genomics_graph)
+        
+        proteomics_graph = nx.DiGraph()
+        for index, row in pnet.iterrows():
+            proteomics_graph.add_edge(row['source'], row['target'])
+        proteomics_graphs.append(proteomics_graph)
+        
+        mutation_graph = nx.DiGraph()
+        for index, row in mnet.iterrows():
+            mutation_graph.add_edge(row['source'], row['target'])
+        mutation_graphs.append(mutation_graph)
+
+    integrated_disease_emb = learn_emb(graphs,graph_names)
+    transcriptomics_disease_emb = learn_emb(genomics_graphs,graph_names)
+    proteomics_disease_emb = learn_emb(proteomics_graphs,graph_names)
+    genomic_disease_emb = learn_emb(mutation_graphs,graph_names)
+    
+    integrated_disease_emb.to_csv("results/disease_embeddings.csv")
+    transcriptomics_disease_emb.to_csv("results/disease_embeddings_transcriptomics.csv")
+    proteomics_disease_emb.to_csv("results/disease_embeddings_proteomics.csv")
+    genomic_disease_emb.to_csv("results/disease_embeddings_genomics.csv")
+
+
+def relabel_graph_nodes(graph, mapping):
+    return nx.relabel_nodes(graph, mapping)
+
+
+def learn_emb(graphs,graph_names):
     # Step 1: Determine the set of all nodes
     all_nodes = set()
     for graph in graphs:
@@ -68,18 +102,12 @@ def EMBEDD_DISEASE():
         for node in missing_nodes:
             graph.add_node(node)
 
-    def relabel_graph_nodes(graph, mapping):
-        return nx.relabel_nodes(graph, mapping)
-
     relabeled_graphs = [relabel_graph_nodes(graph, node_index_mapping) for graph in graphs]
-    model = Graph2Vec()
+    model = Graph2Vec(dimensions=256, wl_iterations=3, min_count=1, learning_rate=1e-2)
     model.fit(relabeled_graphs)
     graph_embeddings = model.get_embedding()
     print("Embeddings shape:", graph_embeddings.shape)
     print("Embeddings:", graph_embeddings)
     graph_embeddings = np.array(graph_embeddings)
     df_embeddings = pd.DataFrame(graph_embeddings, index=graph_names)
-    df_embeddings.to_csv("results/disease_embeddings.csv")
-
-    
-        
+    return df_embeddings
